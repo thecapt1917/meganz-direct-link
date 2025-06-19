@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega.nz Direct Link Generator</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Vue.js 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom styles for the page and animations */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Vue Transition for the results card */
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+    </style>
+</head>
+<body class="bg-neutral-900 text-neutral-200 antialiased">
+
+    <div id="app" class="flex flex-col min-h-screen">
+        
+        <!-- Main Content Area -->
+        <main class="flex-grow flex items-center justify-center p-4">
+            <div class="w-full max-w-lg space-y-8">
+                <!-- Header Section -->
+                <div class="text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-red-500 mb-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white">Mega Direct Link Generator</h1>
+                    <p class="mt-3 text-neutral-400">Paste your Mega.nz URL to get file info and a direct download link.</p>
+                </div>
+
+                <!-- Input Form -->
+                <div class="space-y-4">
+                    <input 
+                        type="url"
+                        v-model="megaUrl"
+                        @keyup.enter="getFileInfo"
+                        placeholder="https://mega.nz/file/..."
+                        class="w-full px-4 py-3 bg-neutral-800 border-2 border-neutral-700 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
+                    >
+                    <button
+                        @click="getFileInfo"
+                        :disabled="loading || !megaUrl"
+                        class="w-full py-3 px-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-900 focus:ring-red-500 transition-colors duration-200 flex items-center justify-center space-x-2"
+                    >
+                        <svg v-if="loading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                         <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
+                        <span>{{ loading ? 'Generating...' : 'Generate Link' }}</span>
+                    </button>
+                </div>
+
+                <!-- Error Message Display -->
+                <transition name="fade">
+                    <div v-if="error" class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-center">
+                        <p>{{ error }}</p>
+                    </div>
+                </transition>
+
+                <!-- Results Section -->
+                <transition name="fade">
+                    <div v-if="fileInfo" class="bg-neutral-800/50 border border-neutral-700 rounded-lg p-6 space-y-4">
+                        <h2 class="text-lg font-semibold text-white border-b border-neutral-700 pb-3 mb-4">File Information</h2>
+                        
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-neutral-400">File Name:</span>
+                            <span class="text-white font-medium text-right break-all">{{ fileInfo.file_name }}</span>
+                        </div>
+
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-neutral-400">File Size:</span>
+                            <span class="text-white font-medium">{{ formattedFileSize }}</span>
+                        </div>
+                        
+                        <div class="pt-4">
+                             <button
+                               @click="downloadFile"
+                               :disabled="isDownloading"
+                               class="w-full flex items-center justify-center space-x-2 text-center py-3 px-4 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-900 focus:ring-green-500 transition-colors duration-200 disabled:bg-green-800 disabled:cursor-not-allowed"
+                            >
+                               <svg v-if="isDownloading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                               </svg>
+                               <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                               <span>{{ isDownloading ? 'Downloading...' : 'Download Now' }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </transition>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="w-full text-center p-4 text-neutral-600 text-sm">
+            <p>Made with ❤️ by thecapt1917</p>
+        </footer>
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                // Reactive state variables
+                const megaUrl = ref('');
+                const fileInfo = ref(null);
+                const directLink = ref('');
+                const loading = ref(false);
+                const error = ref(null);
+                const isDownloading = ref(false);
+
+                // API Endpoint
+                const apiEndpoint = 'https://mega.wldbs.workers.dev/api/info';
+
+                /**
+                 * Formats file size from bytes to a human-readable string.
+                 */
+                const formatBytes = (bytes, decimals = 2) => {
+                    if (!bytes) return '0 Bytes';
+                    const k = 1024;
+                    const dm = decimals < 0 ? 0 : decimals;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+                }
+
+                const formattedFileSize = computed(() => {
+                    return fileInfo.value ? formatBytes(fileInfo.value.file_size) : '';
+                });
+
+                /**
+                 * Fetches file information from the API.
+                 */
+                const getFileInfo = async () => {
+                    if (loading.value || !megaUrl.value.trim()) return;
+
+                    loading.value = true;
+                    error.value = null;
+                    fileInfo.value = null;
+                    directLink.value = '';
+
+                    if (!megaUrl.value.startsWith('https://mega.nz/file/')) {
+                        error.value = 'Only Mega.nz file links are supported (must start with https://mega.nz/file/). Folders are not supported.';
+                        loading.value = false;
+                        return;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('megaurl', megaUrl.value);
+
+                    try {
+                        const response = await fetch(apiEndpoint, {
+                            method: 'POST',
+                            body: formData,
+                        });
+
+                        if (!response.ok && response.status !== 400) {
+                            throw new Error(`API responded with status: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+
+                        if (data.ok) {
+                            fileInfo.value = data;
+                            const base64Url = btoa(megaUrl.value);
+                            directLink.value = `https://mega.wldbs.workers.dev/download?url=${base64Url}`;
+                        } else {
+                            throw new Error(data.error || 'The API could not process the URL.');
+                        }
+
+                    } catch (e) {
+                        console.error('Fetch error:', e);
+                        error.value = e.message || 'Failed to fetch file info.';
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+                
+                /**
+                 * Starts download by redirecting to the direct link.
+                 */
+                const downloadFile = () => {
+                    if (!directLink.value || isDownloading.value) return;
+
+                    isDownloading.value = true;
+                    error.value = null;
+
+                    // Show animation for a moment, then redirect. The browser takes over,
+                    // so the animation naturally stops as the page navigates away.
+                    setTimeout(() => {
+                        window.location.href = directLink.value;
+                        // It's good practice to reset the state, although the user will navigate away.
+                        // This helps if they cancel the navigation and stay on the page.
+                         setTimeout(() => {
+                            isDownloading.value = false;
+                         }, 5000);
+                    }, 500);
+                };
+
+                return {
+                    megaUrl,
+                    fileInfo,
+                    directLink,
+                    loading,
+                    error,
+                    isDownloading,
+                    formattedFileSize,
+                    getFileInfo,
+                    downloadFile,
+                };
+            }
+        }).mount('#app');
+    </script>
+
+</body>
+</html>
