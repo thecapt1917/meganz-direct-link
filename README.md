@@ -35,9 +35,10 @@ https://mega.nz/file/xxxxxxxx#key
 
 ## ⚠️ Limitations
 
-- ❌ Does **not** support Mega folders or encrypted/deleted links
+- ❌ Does **not** support Mega folders
+- ❌ Does **not** support file stream
 - 🚫 This project is **not affiliated** with or endorsed by Mega.nz
-- 📉 The API used is a public worker and may be rate-limited or unreliable
+- 📉 The API used is a public API and may be rate-limited or unreliable
 
 ---
 
