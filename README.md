@@ -8,10 +8,9 @@ A clean, responsive web app that allows users to generate **direct download link
 
 ---
 
-## 🔗 Live Demo
+## 🔗 Site
 
-👉 [Visit the Live Page](https://thecapt1917.github.io/meganz-direct-link)  
-*(Replace the above link with your actual GitHub Pages URL)*
+👉 [Visit Mega.nz Direct Link Generator](https://thecapt1917.github.io/meganz-direct-link)  
 
 ---
 
